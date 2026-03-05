@@ -1,6 +1,7 @@
 import { defineConfig } from 'wxt';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -8,6 +9,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
+    plugins: [
+      cssInjectedByJsPlugin({
+        relativeCSSInjection: true,
+      }),
+    ],
+    build: {
+      cssCodeSplit: true,
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

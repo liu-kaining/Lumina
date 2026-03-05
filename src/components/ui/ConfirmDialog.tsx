@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X } from 'lucide-react';
-import { cn } from '../../lib/utils';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -25,80 +24,66 @@ export function ConfirmDialog({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="confirm-overlay"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          {/* 背景遮罩 */}
           <motion.div
-            className="absolute inset-0 bg-white/90 backdrop-blur-sm"
+            className="confirm-backdrop"
             onClick={onCancel}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
           />
-
-          {/* 对话框 */}
           <motion.div
-            className="relative z-10 w-full max-w-sm mx-4"
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            className="confirm-dialog"
+            initial={{ scale: 0.92, opacity: 0, y: 12 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: 'spring', damping: 25 }}
+            exit={{ scale: 0.95, opacity: 0, y: 8 }}
+            transition={{
+              type: 'spring',
+              damping: 28,
+              stiffness: 260,
+              mass: 0.8,
+            }}
           >
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xl">
-              {/* 关闭按钮 */}
+            <div className="confirm-box">
               <button
+                type="button"
                 onClick={onCancel}
-                className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                className="confirm-close"
+                aria-label="关闭"
               >
-                <X className="w-4 h-4" />
+                <X style={{ width: 16, height: 16 }} />
               </button>
-
-              {/* 图标 */}
-              <div className="flex justify-center mb-4">
+              <div className="confirm-icon-wrap">
                 <motion.div
-                  className="w-14 h-14 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center"
+                  className="confirm-icon-circle"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <Sparkles className="w-7 h-7 text-white" />
+                  <Sparkles />
                 </motion.div>
               </div>
-
-              {/* 标题 */}
-              <h3 className="text-gray-800 text-lg font-semibold text-center mb-2">
-                {title}
-              </h3>
-
-              {/* 消息 */}
-              <p className="text-gray-500 text-sm text-center mb-6">
-                {message}
-              </p>
-
-              {/* 按钮组 */}
-              <div className="flex gap-3">
+              <h3 className="confirm-title">{title}</h3>
+              <p className="confirm-msg">{message}</p>
+              <div className="confirm-btns">
                 <motion.button
+                  type="button"
                   onClick={onCancel}
-                  className={cn(
-                    'flex-1 py-2.5 rounded-xl text-sm font-medium',
-                    'bg-gray-100 hover:bg-gray-200 text-gray-600',
-                    'border border-gray-200 transition-colors'
-                  )}
+                  className="confirm-btn confirm-btn-cancel"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   {cancelText}
                 </motion.button>
-
                 <motion.button
+                  type="button"
                   onClick={onConfirm}
-                  className={cn(
-                    'flex-1 py-2.5 rounded-xl text-sm font-medium',
-                    'bg-gradient-to-r from-amber-500 to-orange-500',
-                    'text-white shadow-lg transition-colors'
-                  )}
+                  className="confirm-btn confirm-btn-ok"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

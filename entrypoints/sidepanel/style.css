@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 让 Tailwind 扫描 src 下的所有组件，否则 WelcomePage 等处的工具类不会生成 */
+@source "../../src";
+
 /* Tailwind v4 主题配置 */
 @theme {
   --color-lumina-primary: #f59e0b;

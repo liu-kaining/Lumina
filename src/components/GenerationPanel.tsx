@@ -8,7 +8,6 @@ import { ConfirmDialog } from './ui/ConfirmDialog';
 import { useAppStore } from '../store/useAppStore';
 import { AIService } from '../core/ai-service';
 import { dbOperations } from '../core/db';
-import { cn } from '../lib/utils';
 import { ProviderConfig } from '../types';
 
 interface GenerationPanelProps {
@@ -100,10 +99,9 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
   };
 
   return (
-    <div className="space-y-4">
-      {/* 风格选择 */}
-      <div>
-        <label className="text-gray-500 text-xs mb-2 block font-medium">风格预设</label>
+    <div className="gen-wrap">
+      <div className="gen-section">
+        <label className="gen-label">风格预设</label>
         <StyleSelector
           value={currentStyle}
           onChange={setCurrentStyle}
@@ -111,9 +109,8 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
         />
       </div>
 
-      {/* 语言选择 */}
-      <div>
-        <label className="text-gray-500 text-xs mb-2 block font-medium">图片文字语言</label>
+      <div className="gen-section">
+        <label className="gen-label">图片文字语言</label>
         <LanguageSelector
           value={imageLanguage}
           onChange={setImageLanguage}
@@ -121,54 +118,50 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
         />
       </div>
 
-      {/* Prompt 棱镜 */}
       {refinedPrompt && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="rounded-xl overflow-hidden bg-white/60 border border-orange-100"
+          className="gen-prompt-box"
         >
           <button
+            type="button"
             onClick={() => setShowPrompt(!showPrompt)}
-            className="w-full px-4 py-3 flex items-center justify-between text-gray-600 text-sm hover:bg-orange-50/50 transition-colors"
+            className="gen-prompt-toggle"
           >
-            <span className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-orange-500" />
+            <span>
+              <Sparkles />
               Prompt 棱镜
             </span>
-            {showPrompt ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showPrompt ? <ChevronUp style={{ width: 16, height: 16 }} /> : <ChevronDown style={{ width: 16, height: 16 }} />}
           </button>
-
           <AnimatePresence>
             {showPrompt && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="px-4 pb-4"
+                className="gen-prompt-body"
               >
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  {refinedPrompt}
-                </p>
+                <p>{refinedPrompt}</p>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
       )}
 
-      {/* 错误提示 */}
       {error && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-2 p-4 rounded-xl bg-red-50 border border-red-200"
+          className="gen-error-box"
         >
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <AlertCircle />
           <div>
-            <p className="text-red-700 text-sm font-medium mb-1">
+            <p className="gen-error-title">
               {error.includes('429') || error.includes('quota') ? 'API 配额已用尽' : '生成失败'}
             </p>
-            <p className="text-red-600/70 text-xs">
+            <p className="gen-error-desc">
               {error.includes('429') || error.includes('quota')
                 ? 'Gemini 免费版有请求限制，请稍后再试或升级到付费计划'
                 : error}
@@ -177,7 +170,6 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
         </motion.div>
       )}
 
-      {/* 生成按钮 / 进度 */}
       <AnimatePresence mode="wait">
         {isGenerating ? (
           <LoadingState
@@ -189,31 +181,24 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
         ) : (
           <motion.button
             key="button"
+            type="button"
             onClick={() => setShowConfirm(true)}
             disabled={!selectedText || !hasCredentials}
-            className={cn(
-              'w-full py-4 rounded-xl font-semibold text-lg',
-              'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500',
-              'text-white shadow-lg shadow-orange-500/25',
-              'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
-              'transition-all duration-200',
-              'hover:shadow-xl hover:shadow-orange-500/30'
-            )}
+            className="gen-btn"
             whileHover={{ scale: selectedText && hasCredentials ? 1.02 : 1 }}
             whileTap={{ scale: selectedText && hasCredentials ? 0.98 : 1 }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <span className="flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5" />
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+              <Sparkles />
               生成配图
             </span>
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* 确认弹窗 */}
       <ConfirmDialog
         isOpen={showConfirm}
         title="开始生成配图？"

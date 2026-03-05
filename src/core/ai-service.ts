@@ -29,8 +29,8 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
  */
 export class AIService {
   // 超时配置
-  private static ENHANCE_TIMEOUT = 30000; // Prompt 增强超时 30 秒
-  private static GENERATE_TIMEOUT = 60000; // 图片生成超时 60 秒
+  private static ENHANCE_TIMEOUT = 90000; // Prompt 增强超时 90 秒
+  private static GENERATE_TIMEOUT = 300000; // 图片生成超时 300 秒（5 分钟）
 
   /**
    * 完整的图片生成流程

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Download, GripVertical, Maximize2, Check, Trash2 } from 'lucide-react';
 import { ImageRecord } from '../../types';
-import { cn } from '../../lib/utils';
 
 interface ImageCardProps {
   image: ImageRecord;
@@ -14,10 +13,6 @@ interface ImageCardProps {
   className?: string;
 }
 
-/**
- * 图片卡片组件
- * 支持拖拽、下载、多选、删除、点击放大
- */
 export function ImageCard({
   image,
   isSelected = false,
@@ -25,7 +20,7 @@ export function ImageCard({
   onToggleSelect,
   onClick,
   onDelete,
-  className
+  className,
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -78,38 +73,25 @@ export function ImageCard({
 
   return (
     <motion.div
-      className={cn(
-        'relative rounded-xl overflow-hidden',
-        'bg-white border shadow-sm',
-        'transition-all duration-300',
-        isSelected
-           ? 'border-amber-400 ring-2 ring-amber-400/30'
-           : 'border-gray-200 hover:border-amber-300 hover:shadow-md',
-        isDragging && 'opacity-50 scale-95',
-        className
-      )}
+      className={`gallery-card ${isSelected ? 'selected' : ''} ${className ?? ''}`}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        transform: isDragging ? 'scale(0.98)' : undefined,
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* 图片区域 - 可点击放大/选择 */}
       <div
-        className="relative cursor-pointer"
+        className="gallery-card-img-wrap"
+        style={{ position: 'relative', cursor: 'pointer' }}
         onClick={handleCardClick}
       >
-        {/* 选中指示器 */}
         {selectionMode && (
           <motion.div
-            className={cn(
-              'absolute top-3 left-3 z-30 w-8 h-8 rounded-full',
-              'border-2 flex items-center justify-center',
-              'transition-all duration-200 cursor-pointer',
-              isSelected
-                 ? 'bg-amber-500 border-amber-500'
-                 : 'bg-white/90 border-gray-300'
-            )}
+            className={`gallery-card-check ${isSelected ? 'selected' : ''}`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             onClick={(e) => {
@@ -118,84 +100,72 @@ export function ImageCard({
             }}
           >
             {isSelected && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-              >
-                <Check className="w-5 h-5 text-white" />
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                <Check />
               </motion.div>
             )}
           </motion.div>
         )}
 
-        {/* 图片 - 显示原图比例 */}
         <img
           src={imageUrl}
           alt={image.originalText}
-          className={cn(
-            'w-full h-auto object-contain transition-all duration-200',
-            isSelected && selectionMode && 'opacity-80'
-          )}
+          className="gallery-card-img"
+          style={{ opacity: isSelected && selectionMode ? 0.8 : 1 }}
           draggable={false}
         />
 
-        {/* 悬浮操作栏 - 非选择模式 */}
         {!selectionMode && isHovered && (
           <motion.div
-            className="absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end justify-between p-4"
+            className="gallery-card-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="flex gap-2">
+            <div className="gallery-card-actions">
               <button
+                type="button"
                 onClick={handleDownload}
-                className="p-2.5 rounded-lg bg-white/90 hover:bg-white transition-colors shadow-sm"
+                className="gallery-card-action"
                 title="下载"
               >
-                <Download className="w-4 h-4 text-gray-700" />
+                <Download />
               </button>
-
               <button
+                type="button"
                 onClick={handleDelete}
-                className="p-2.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors shadow-sm"
+                className="gallery-card-action gallery-card-action-delete"
                 title="删除"
               >
-                <Trash2 className="w-4 h-4 text-red-500" />
+                <Trash2 />
               </button>
             </div>
-
-            <div className="flex gap-2">
+            <div className="gallery-card-actions">
               <div
                 draggable
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                className="p-2.5 rounded-lg bg-white/90 hover:bg-white transition-colors shadow-sm cursor-grab active:cursor-grabbing"
+                className="gallery-card-action"
                 title="拖拽到编辑器"
                 onClick={(e) => e.stopPropagation()}
               >
-                <GripVertical className="w-4 h-4 text-gray-700" />
+                <GripVertical />
               </div>
-
               <button
+                type="button"
                 onClick={handlePreview}
-                className="p-2.5 rounded-lg bg-white/90 hover:bg-white transition-colors shadow-sm"
+                className="gallery-card-action"
                 title="放大预览"
               >
-                <Maximize2 className="w-4 h-4 text-gray-700" />
+                <Maximize2 />
               </button>
             </div>
           </motion.div>
         )}
       </div>
 
-      {/* 原文提示 */}
-      <div className="p-3 cursor-pointer bg-gray-50" onClick={handleCardClick}>
-        <p className="text-gray-700 text-sm line-clamp-2">
-          {image.originalText}
-        </p>
-        <p className="text-gray-400 text-xs mt-1">
-          {new Date(image.createdAt).toLocaleString('zh-CN')}
-        </p>
+      <div className="gallery-card-footer" onClick={handleCardClick}>
+        <p>{image.originalText}</p>
+        <p className="muted">{new Date(image.createdAt).toLocaleString('zh-CN')}</p>
       </div>
     </motion.div>
   );

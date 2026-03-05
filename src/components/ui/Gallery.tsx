@@ -7,7 +7,6 @@ import { ImageRecord } from '../../types';
 import { ImageCard } from './ImageCard';
 import { ImagePreview } from './ImagePreview';
 import { exportImagesAsZip } from '../../utils/export';
-import { cn } from '../../lib/utils';
 
 export function Gallery() {
   const images = useLiveQuery(() =>
@@ -139,147 +138,113 @@ export function Gallery() {
   const allSelected = images.length === selectedIds.size;
 
   return (
-    <div className="mt-6">
-      {/* 顶部工具栏 - 响应式布局 */}
-      <div className="space-y-3 mb-4">
-        {/* 第一行：标题和主要操作 */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-gray-700 text-sm font-medium">
-            光影画廊 ({images.length})
-          </h3>
-
-          {/* 选择模式按钮 / 打包下载 */}
+    <div className="gallery-wrap">
+      <div className="gallery-toolbar">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 className="gallery-title">光影画廊 ({images.length})</h3>
           {selectionMode ? (
             <motion.button
+              type="button"
               onClick={exitSelectionMode}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs',
-                'bg-amber-100 text-amber-700 border border-amber-200',
-                'transition-all duration-200'
-              )}
+              className="gallery-btn gallery-btn-amber"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <X className="w-3.5 h-3.5" />
+              <X />
               完成选择
             </motion.button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="gallery-actions">
               <motion.button
+                type="button"
                 onClick={() => setSelectionMode(true)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs',
-                  'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200',
-                  'transition-all duration-200 shadow-sm'
-                )}
+                className="gallery-btn"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Square className="w-3.5 h-3.5" />
+                <Square />
                 选择
               </motion.button>
-
               <motion.button
+                type="button"
                 onClick={handleExport}
                 disabled={isExporting}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs',
-                  'bg-white hover:bg-gray-50',
-                  'border border-gray-200 text-gray-600 shadow-sm',
-                  'transition-colors disabled:opacity-50'
-                )}
+                className="gallery-btn"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Package className="w-3.5 h-3.5" />
+                <Package />
                 {isExporting ? '打包中...' : '打包下载'}
               </motion.button>
             </div>
           )}
         </div>
 
-        {/* 第二行：选择模式操作按钮 */}
         {selectionMode && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 flex-wrap"
+            className="gallery-btn-row2"
           >
-            {/* 全选/取消全选 */}
             <motion.button
+              type="button"
               onClick={allSelected ? deselectAll : selectAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 transition-colors shadow-sm"
+              className="gallery-btn"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               {allSelected ? (
                 <>
-                  <Square className="w-3.5 h-3.5" />
+                  <Square />
                   取消全选
                 </>
               ) : (
                 <>
-                  <CheckSquare className="w-3.5 h-3.5" />
+                  <CheckSquare />
                   全选
                 </>
               )}
             </motion.button>
-
-            {/* 批量下载 */}
             <motion.button
-               onClick={handleExportSelected}
-               disabled={selectedCount === 0 || isExporting}
-               className={cn(
-                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs',
-                 'bg-amber-50 hover:bg-amber-100 text-amber-700',
-                 'border border-amber-200 transition-colors',
-                 'disabled:opacity-50 disabled:cursor-not-allowed'
-               )}
-               whileHover={{ scale: 1.02 }}
-               whileTap={{ scale: 0.98 }}
-             >
-               <Download className="w-3.5 h-3.5" />
-               {isExporting ? '打包中...' : `下载 (${selectedCount})`}
-             </motion.button>
-
-            {/* 批量删除 */}
-            <motion.button
-              onClick={handleDeleteSelected}
-              disabled={selectedCount === 0}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs',
-                'bg-red-50 hover:bg-red-100 text-red-600',
-                'border border-red-200 transition-colors',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
+              type="button"
+              onClick={handleExportSelected}
+              disabled={selectedCount === 0 || isExporting}
+              className="gallery-btn gallery-btn-amber"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Download />
+              {isExporting ? '打包中...' : `下载 (${selectedCount})`}
+            </motion.button>
+            <motion.button
+              type="button"
+              onClick={handleDeleteSelected}
+              disabled={selectedCount === 0}
+              className="gallery-btn gallery-btn-red"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Trash2 />
               删除 ({selectedCount})
             </motion.button>
           </motion.div>
         )}
       </div>
 
-      {/* 选择提示条 */}
       <AnimatePresence>
         {selectionMode && selectedCount > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200"
+            className="gallery-hint"
           >
-            <p className="text-amber-700 text-xs">
-              已选择 {selectedCount} 张图片
-            </p>
+            <p>已选择 {selectedCount} 张图片</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 单列画廊 - 适配窄屏 */}
-      <div className="flex flex-col gap-4">
+      <div className="gallery-list">
         <AnimatePresence>
           {images.map((image) => (
             <ImageCard

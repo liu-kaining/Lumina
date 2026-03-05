@@ -1,0 +1,228 @@
+/* 设置面板专用样式 - 不依赖 Tailwind，保证在扩展内一定生效 */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.settings-panel {
+  width: 100%;
+  background: #fff;
+  border-radius: 1.5rem 1.5rem 0 0;
+  padding: 1.25rem 1.25rem 2rem;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.settings-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.settings-close-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.settings-close-btn:hover {
+  background: #e5e7eb;
+}
+
+.settings-close-btn svg {
+  width: 1rem;
+  height: 1rem;
+  color: #6b7280;
+}
+
+.settings-section {
+  margin-bottom: 1.5rem;
+}
+
+.settings-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.settings-label-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.settings-label-inline svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.settings-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-option-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid #f3f4f6;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-align: left;
+  font: inherit;
+}
+.settings-option-btn:hover {
+  border-color: #e5e7eb;
+}
+
+.settings-option-btn.selected {
+  border-color: #92400e;
+  background: #fafaf9;
+}
+
+.settings-option-btn .option-icon {
+  font-size: 1.5rem;
+}
+
+.settings-option-btn .option-body {
+  flex: 1;
+}
+
+.settings-option-btn .option-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.settings-option-btn .option-desc {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.settings-option-btn .option-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #92400e;
+  flex-shrink: 0;
+}
+
+.settings-input-wrap {
+  position: relative;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  padding-right: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  font-size: 1rem;
+  color: #1f2937;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.settings-input::placeholder {
+  color: #9ca3af;
+}
+.settings-input:focus {
+  border-color: #92400e;
+  box-shadow: 0 0 0 2px rgba(146, 64, 14, 0.15);
+}
+
+.settings-input-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: #9ca3af;
+}
+.settings-input-toggle:hover {
+  color: #4b5563;
+}
+
+.settings-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.settings-hint svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+}
+
+.settings-save-btn {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: opacity 0.2s, box-shadow 0.2s;
+}
+.settings-save-btn:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+.settings-save-btn:not(:disabled):not(.saved) {
+  background: #92400e;
+  color: #fff;
+}
+.settings-save-btn:not(:disabled):not(.saved):hover {
+  background: #b45309;
+  box-shadow: 0 4px 12px rgba(146, 64, 14, 0.25);
+}
+.settings-save-btn.saved {
+  background: #22c55e;
+  color: #fff;
+}
+
+.settings-save-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
