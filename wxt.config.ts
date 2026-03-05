@@ -13,6 +13,14 @@ export default defineConfig({
         '@': path.resolve(__dirname, './src'),
       },
     },
+    css: {
+      postcss: {
+        plugins: [
+          require('@tailwindcss/postcss'),
+          require('autoprefixer'),
+        ],
+      },
+    },
   }),
   manifest: {
     name: 'LucidMark - 光影档案',
@@ -35,6 +43,15 @@ export default defineConfig({
         },
         description: '生成配图',
       },
+    },
+    web_accessible_resources: [
+      {
+        resources: ['assets/*', 'chunks/*'],
+        matches: ['<all_urls>'],
+      },
+    ],
+    content_security_policy: {
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'self' 'unsafe-inline';",
     },
   },
 });

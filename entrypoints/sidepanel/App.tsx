@@ -22,10 +22,19 @@ export default function App() {
     providers,
   } = useAppStore();
 
-  const activeProvider = providers.find((p) => p.id === activeProviderId);
+  const activeProvider = providers?.find((p) => p.id === activeProviderId);
   const hasApiKey = activeProvider?.credentials && 'apiKey' in activeProvider.credentials
     ? !!activeProvider.credentials.apiKey
     : false;
+
+  // 等待 store 初始化
+  if (!providers || providers.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-orange-50 via-amber-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     console.log('LucidMark SidePanel loaded');
