@@ -91,10 +91,16 @@ Please create an enhanced image generation prompt based on the selected text and
       }
 
       const data = await response.json();
+      console.log('[CustomAdapter] API response data:', JSON.stringify(data, null, 2));
+      
       const enhancedPrompt = data.choices?.[0]?.message?.content;
       
+      console.log('[CustomAdapter] Enhanced prompt raw:', enhancedPrompt);
+      
       if (!enhancedPrompt || enhancedPrompt.trim() === '') {
-        console.error('[CustomAdapter] AI 返回空提示词:', enhancedPrompt);
+        console.error('[CustomAdapter] AI 返回空提示词，完整响应:', JSON.stringify(data, null, 2));
+        console.error('[CustomAdapter] Request model:', modelName);
+        console.error('[CustomAdapter] Request baseUrl:', baseUrl);
         throw new Error('AI 未能优化提示词，返回了空内容');
       }
       

@@ -253,6 +253,7 @@ export function Gallery() {
               <Trash2 />
               删除 ({selectedCount})
             </motion.button>
+            
           </motion.div>
         )}
       </div>

@@ -130,34 +130,6 @@ export function ImageCard({
               >
                 <Download />
               </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="gallery-card-action gallery-card-action-delete"
-                title="删除"
-              >
-                <Trash2 />
-              </button>
-            </div>
-            <div className="gallery-card-actions">
-              <div
-                draggable
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                className="gallery-card-action"
-                title="拖拽到编辑器"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <GripVertical />
-              </div>
-              <button
-                type="button"
-                onClick={handlePreview}
-                className="gallery-card-action"
-                title="放大预览"
-              >
-                <Maximize2 />
-              </button>
             </div>
           </motion.div>
         )}
