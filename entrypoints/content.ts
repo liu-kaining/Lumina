@@ -4,7 +4,7 @@ export default defineContentScript({
     console.log('LucidMark Content Script loaded');
 
     /**
-     * 获取选中文本及其上下文
+     * 获取选中文本及其上下文（包含 HTML 格式）
      */
     function getSelectionWithContext() {
       const selection = window.getSelection();
@@ -19,11 +19,20 @@ export default defineContentScript({
         return null;
       }
 
-      // 获取上下文
+      // 获取 HTML 格式
+      let selectedHtml = '';
       let contextSnippet = '';
 
       try {
         const range = selection.getRangeAt(0);
+
+        // 克隆选中内容并获取 HTML
+        const fragment = range.cloneContents();
+        const div = document.createElement('div');
+        div.appendChild(fragment);
+        selectedHtml = div.innerHTML;
+
+        // 获取上下文
         const container = range.commonAncestorContainer;
         const textNode = container.nodeType === Node.TEXT_NODE
           ? container
@@ -42,6 +51,7 @@ export default defineContentScript({
 
       return {
         text: selectedText,
+        html: selectedHtml,
         title: document.title,
         context: contextSnippet,
       };

@@ -31,6 +31,7 @@ export default defineBackground(() => {
         type: 'TEXT_SELECTED',
         payload: {
           text: info.selectionText,
+          html: info.selectionText || '',
           title: tab.title || '',
           context: '', // 右键菜单无法获取上下文，由 content script 负责获取
         },
@@ -59,6 +60,7 @@ export default defineBackground(() => {
             type: 'TEXT_SELECTED',
             payload: {
               text: response.text,
+              html: response.html || response.text || '',
               title: response.title || '',
               context: response.context || '',
             },

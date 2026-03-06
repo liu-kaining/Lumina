@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIProvider } from '../interfaces';
 import { GeminiCredentials, ProviderCredentials, ImageLanguage } from '../../../types';
-import { applyStyleToPrompt } from '../../presets';
+import { applyStyleToPrompt, getStylePresetById } from '../../presets';
 
 /**
  * Google Gemini Provider 适配器
@@ -42,11 +42,18 @@ export class GeminiAdapter implements AIProvider {
       ? `IMPORTANT: The generated image MUST display text in CHINESE (中文). When the image contains any text, labels, or words, they must be in Chinese characters. This is critical.`
       : `IMPORTANT: The generated image MUST display text in ENGLISH. When the image contains any text, labels, or words, they must be in English. This is critical.`;
 
-    const systemPrompt = `You are an expert image prompt engineer. Your task is to transform the given text into a high-quality, detailed image generation prompt.
+    // 获取风格信息
+    const stylePreset = getStylePresetById(style);
+    
+    const systemPrompt = `You are an expert image prompt engineer. Your task is to transform the given text into a high-quality, detailed image generation prompt${stylePreset && stylePreset.id !== 'default' ? ` with a specific artistic style.` : '.'}
 
 Guidelines:
 - Transform the user's selected text into a vivid, detailed visual description
-- Consider the context and webpage title when relevant
+- Consider the context and webpage title when relevant${stylePreset && stylePreset.id !== 'default' ? `
+- CRITICAL: You MUST incorporate the "${stylePreset.nameEn}" (${stylePreset.name}) style into the prompt. 
+  Style characteristics: ${stylePreset.description}
+  Key visual elements to include: ${stylePreset.promptSuffix}
+  The style MUST be integral to the prompt, not just an afterthought.` : ''}
 - Use professional photography and art terminology
 - Include details about lighting, composition, mood, and style
 - ALWAYS include quality requirements: "4K resolution, ultra high quality, sharp details, professional photography"
@@ -57,9 +64,13 @@ ${languageInstruction}`;
 
     const userPrompt = `Context: ${context || 'No additional context provided'}
 
-Selected text: "${text}"
+Selected text: "${text}"${stylePreset && stylePreset.id !== 'default' ? `
 
-Please create an enhanced image generation prompt based on the selected text and context. Remember: the image MUST contain ${imageLanguage === 'chinese' ? 'CHINESE (中文)' : 'ENGLISH'} text if there are any words in the image.`;
+Artistic style to integrate: ${stylePreset.nameEn} (${stylePreset.name})
+Style description: ${stylePreset.description}
+Key visual elements to include: ${stylePreset.promptSuffix}` : ''}
+
+Please create an enhanced image generation prompt based on the selected text and context.${stylePreset && stylePreset.id !== 'default' ? ` IMPORTANT: The "${stylePreset.nameEn}" style MUST be deeply integrated into the prompt, not just appended at the end.` : ''} Remember: the image MUST contain ${imageLanguage === 'chinese' ? 'CHINESE (中文)' : 'ENGLISH'} text if there are any words in the image.`;
 
     try {
       console.log('[Gemini] Sending request to API...');
@@ -74,11 +85,26 @@ Please create an enhanced image generation prompt based on the selected text and
       console.log(`[Gemini] API response received in ${elapsed}ms`);
 
       const enhancedPrompt = result.response.text();
-      console.log('[Gemini] Enhanced prompt:', enhancedPrompt.substring(0, 100) + '...');
+      
+      if (!enhancedPrompt || enhancedPrompt.trim() === '') {
+        throw new Error('AI 返回了空提示词');
+      }
+      
+      // 检查是否返回的提示词就是原始文本（可能说明AI没有正确优化）
+      const normalizedInput = text.trim().toLowerCase().replace(/\s+/g, ' ');
+      const normalizedOutput = enhancedPrompt.trim().toLowerCase().replace(/\s+/g, ' ');
+      
+      if (normalizedOutput === normalizedInput) {
+        throw new Error('AI 未能优化提示词，返回了原始文本');
+      }
+
+      console.log('[Gemini] Original text:', text.substring(0, 100) + '...');
+      console.log('[Gemini] Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');
 
       // 应用风格
       const finalPrompt = applyStyleToPrompt(enhancedPrompt, style);
 
+      console.log('[Gemini] Final prompt with style:', finalPrompt.substring(0, 200) + '...');
       return finalPrompt;
     } catch (error) {
       console.error('[Gemini] Prompt enhancement failed:', error);

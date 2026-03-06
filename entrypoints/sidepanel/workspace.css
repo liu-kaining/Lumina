@@ -119,6 +119,81 @@
   color: #9ca3af;
   font-style: normal;
 }
+
+/* 富文本内容样式 */
+.ws-rich-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+  font-size: 0.8125rem;
+}
+.ws-rich-content table th,
+.ws-rich-content table td {
+  border: 1px solid #d6d3d1;
+  padding: 0.375rem 0.5rem;
+  text-align: left;
+}
+.ws-rich-content table th {
+  background: #f5f5f4;
+  font-weight: 600;
+}
+.ws-rich-content table tr:hover td {
+  background: #fafaf9;
+}
+.ws-rich-content ul,
+.ws-rich-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+.ws-rich-content li {
+  margin-bottom: 0.25rem;
+}
+.ws-rich-content pre,
+.ws-rich-content code {
+  background: #f5f5f4;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+}
+.ws-rich-content code {
+  padding: 0.125rem 0.25rem;
+}
+.ws-rich-content pre {
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+}
+.ws-rich-content blockquote {
+  border-left: 3px solid #d6d3d1;
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  color: #78716c;
+}
+.ws-rich-content strong {
+  font-weight: 600;
+}
+.ws-rich-content em {
+  font-style: italic;
+}
+.ws-rich-content a {
+  color: #92400e;
+  text-decoration: underline;
+}
+.ws-rich-content h1,
+.ws-rich-content h2,
+.ws-rich-content h3,
+.ws-rich-content h4 {
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+.ws-rich-content h1 { font-size: 1rem; }
+.ws-rich-content h2 { font-size: 0.9375rem; }
+.ws-rich-content h3 { font-size: 0.875rem; }
+.ws-rich-content h4 { font-size: 0.8125rem; }
+.ws-rich-content hr {
+  border: none;
+  border-top: 1px solid #e7e5e4;
+  margin: 0.5rem 0;
+}
 .ws-card-context {
   margin-top: 0.75rem; padding-top: 0.75rem;
   border-top: 1px solid #e7e5e4;

@@ -15,6 +15,7 @@ export default function App() {
 
   const {
     selectedText,
+    selectedHtml,
     pageTitle,
     pageContext,
     setSelectedText,
@@ -23,9 +24,20 @@ export default function App() {
   } = useAppStore();
 
   const activeProvider = providers?.find((p) => p.id === activeProviderId);
-  const hasApiKey = activeProvider?.credentials && 'apiKey' in activeProvider.credentials
-    ? !!activeProvider.credentials.apiKey
-    : false;
+
+  // 检查是否已配置凭证
+  const hasApiKey = (() => {
+    if (!activeProvider?.credentials) return false;
+    // Gemini: 检查 apiKey
+    if ('apiKey' in activeProvider.credentials) {
+      return !!activeProvider.credentials.apiKey;
+    }
+    // Custom OpenAI: 检查 textModel 和 imageModel 的 apiKey
+    if ('textModel' in activeProvider.credentials && 'imageModel' in activeProvider.credentials) {
+      return !!activeProvider.credentials.textModel?.apiKey && !!activeProvider.credentials.imageModel?.apiKey;
+    }
+    return false;
+  })();
 
   if (!providers || providers.length === 0) {
     return (
@@ -44,6 +56,7 @@ export default function App() {
       if (message.type === 'TEXT_SELECTED') {
         setSelectedText(
           message.payload.text,
+          message.payload.html,
           message.payload.context,
           message.payload.title
         );
@@ -106,9 +119,10 @@ export default function App() {
 
         <div className={`ws-card-text-box ${!selectedText ? 'is-placeholder' : ''}`}>
           <h3 className="ws-card-text-label">选中文本</h3>
-          <p className="ws-card-text-value">
-            {selectedText || '请在网页中划选文本...'}
-          </p>
+          <div
+            className="ws-card-text-value ws-rich-content"
+            dangerouslySetInnerHTML={{ __html: selectedHtml || selectedText || '请在网页中划选文本...' }}
+          />
         </div>
 
         {pageContext && (

@@ -6,6 +6,7 @@ import { db } from '../../core/db';
 import { ImageRecord } from '../../types';
 import { ImageCard } from './ImageCard';
 import { ImagePreview } from './ImagePreview';
+import { ConfirmDialog } from './ConfirmDialog';
 import { exportImagesAsZip } from '../../utils/export';
 
 export function Gallery() {
@@ -20,6 +21,11 @@ export function Gallery() {
   // 多选状态
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // 删除确认弹窗状态
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteSingleConfirmOpen, setDeleteSingleConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const handleImageClick = (image: ImageRecord) => {
     if (selectionMode) {
@@ -53,6 +59,13 @@ export function Gallery() {
     setSelectedIds(new Set());
   };
 
+  // 打开批量删除确认弹窗
+  const openDeleteConfirm = () => {
+    if (selectedIds.size === 0) return;
+    setDeleteConfirmOpen(true);
+  };
+
+  // 确认批量删除
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
 
@@ -62,14 +75,27 @@ export function Gallery() {
       }
       setSelectedIds(new Set());
       setSelectionMode(false);
+      setDeleteConfirmOpen(false);
     } catch (e) {
       console.error('Delete failed:', e);
     }
   };
 
-  const handleDeleteSingle = async (id: number) => {
+  // 打开单张删除确认弹窗
+  const openDeleteSingleConfirm = (id: number) => {
+    setPendingDeleteId(id);
+    setDeleteSingleConfirmOpen(true);
+  };
+
+  // 确认单张删除
+  const handleDeleteSingle = async (imageId?: number) => {
+    if (!imageId && pendingDeleteId === null) return;
+    const idToDelete = imageId || pendingDeleteId;
+
     try {
-      await db.images.delete(id);
+      await db.images.delete(idToDelete!);
+      setDeleteSingleConfirmOpen(false);
+      setPendingDeleteId(null);
     } catch (e) {
       console.error('Delete failed:', e);
     }
@@ -268,6 +294,31 @@ export function Gallery() {
         onClose={handleClosePreview}
         onDelete={() => {
           // 刷新列表会自动更新
+        }}
+      />
+
+      {/* 批量删除确认弹窗 */}
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        title={`删除 ${selectedCount} 张图片`}
+        message={`确定要删除选中的 ${selectedCount} 张图片吗？此操作不可撤销。`}
+        confirmText="删除"
+        cancelText="取消"
+        onConfirm={handleDeleteSelected}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
+
+      {/* 单张删除确认弹窗 */}
+      <ConfirmDialog
+        isOpen={deleteSingleConfirmOpen}
+        title="删除图片"
+        message="确定要删除这张图片吗？此操作不可撤销。"
+        confirmText="删除"
+        cancelText="取消"
+        onConfirm={handleDeleteSingle}
+        onCancel={() => {
+          setDeleteSingleConfirmOpen(false);
+          setPendingDeleteId(null);
         }}
       />
     </div>

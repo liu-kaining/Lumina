@@ -8,7 +8,7 @@
  * 插件内部通信消息类型
  */
 export type MessageAction =
-  | { type: 'TEXT_SELECTED'; payload: { text: string; title: string; context: string } }
+  | { type: 'TEXT_SELECTED'; payload: { text: string; html: string; title: string; context: string } }
   | { type: 'OPEN_SIDEPANEL' };
 
 /**
@@ -45,11 +45,22 @@ export interface GeminiCredentials {
   apiKey: string;
 }
 
-export interface CustomOpenAICredentials {
-  apiKey: string;
+/**
+ * 单个模型配置（用于 Custom OpenAI）
+ */
+export interface ModelConfig {
   baseUrl: string;
-  textModel: string;
-  imageModel: string;
+  apiKey: string;
+  modelName: string;
+}
+
+/**
+ * Custom OpenAI 凭证配置
+ * 提示词优化模型和生图模型可独立配置
+ */
+export interface CustomOpenAICredentials {
+  textModel: ModelConfig;   // 提示词优化模型配置
+  imageModel: ModelConfig;  // 生图模型配置
 }
 
 export type ProviderCredentials = GeminiCredentials | CustomOpenAICredentials;
@@ -124,6 +135,7 @@ export interface AppState {
 
   // 当前选中的文本
   selectedText: string;
+  selectedHtml: string; // 富文本格式
   pageContext: string;
   pageTitle: string;
 
@@ -135,7 +147,7 @@ export interface AppState {
   // Actions
   setActiveProvider: (id: string) => void;
   setProviderCredentials: (id: string, credentials: ProviderCredentials) => void;
-  setSelectedText: (text: string, context: string, title: string) => void;
+  setSelectedText: (text: string, html: string, context: string, title: string) => void;
   setGenerating: (status: boolean) => void;
   setCurrentStyle: (style: string) => void;
   setImageLanguage: (language: ImageLanguage) => void;

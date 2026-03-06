@@ -38,9 +38,20 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const activeProvider = providers.find((p: ProviderConfig) => p.id === activeProviderId);
-  const hasCredentials = activeProvider?.credentials && 'apiKey' in activeProvider.credentials
-    ? !!activeProvider.credentials.apiKey
-    : false;
+
+  // 检查是否已配置凭证
+  const hasCredentials = (() => {
+    if (!activeProvider?.credentials) return false;
+    // Gemini: 检查 apiKey
+    if ('apiKey' in activeProvider.credentials) {
+      return !!activeProvider.credentials.apiKey;
+    }
+    // Custom OpenAI: 检查 textModel 和 imageModel 的 apiKey
+    if ('textModel' in activeProvider.credentials && 'imageModel' in activeProvider.credentials) {
+      return !!activeProvider.credentials.textModel?.apiKey && !!activeProvider.credentials.imageModel?.apiKey;
+    }
+    return false;
+  })();
 
   const handleGenerate = async () => {
     if (!selectedText || !hasCredentials || isGenerating) return;

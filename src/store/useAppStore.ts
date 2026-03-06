@@ -30,6 +30,7 @@ export const useAppStore = create<AppState>()(
       providers: defaultProviders,
 
       selectedText: '',
+      selectedHtml: '',
       pageContext: '',
       pageTitle: '',
 
@@ -50,9 +51,10 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      setSelectedText: (text: string, context: string, title: string) => {
+      setSelectedText: (text: string, html: string, context: string, title: string) => {
         set({
           selectedText: text,
+          selectedHtml: html,
           pageContext: context,
           pageTitle: title,
         });

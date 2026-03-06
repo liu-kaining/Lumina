@@ -1,10 +1,11 @@
 import { AIProvider } from '../interfaces';
 import { CustomOpenAICredentials, ProviderCredentials, ImageLanguage } from '../../../types';
-import { applyStyleToPrompt } from '../../presets';
+import { applyStyleToPrompt, getStylePresetById } from '../../presets';
 
 /**
  * Custom OpenAI 兼容 Provider 适配器
  * 支持任何兼容 OpenAI API 格式的服务
+ * 提示词优化模型和生图模型可独立配置
  */
 export class CustomAdapter implements AIProvider {
   id = 'custom';
@@ -13,7 +14,7 @@ export class CustomAdapter implements AIProvider {
 
   /**
    * 增强 Prompt
-   * 根据 imageLanguage 决定输出中文还是英文的绘图指令
+   * 使用 textModel 配置
    */
   async enhancePrompt(
     text: string,
@@ -24,42 +25,57 @@ export class CustomAdapter implements AIProvider {
   ): Promise<string> {
     const customCreds = credentials as CustomOpenAICredentials;
 
-    if (!customCreds.apiKey || !customCreds.baseUrl || !customCreds.textModel) {
-      throw new Error('Custom Provider 配置不完整');
+    // 使用提示词优化模型配置
+    const { baseUrl, apiKey, modelName } = customCreds.textModel;
+
+    if (!apiKey || !baseUrl || !modelName) {
+      throw new Error('提示词优化模型配置不完整');
     }
 
     const languageInstruction = imageLanguage === 'chinese'
-      ? `IMPORTANT: The generated image MUST display text in CHINESE (中文). When the image contains any text, labels, or words, they must be in Chinese characters.`
-      : `IMPORTANT: The generated image MUST display text in ENGLISH. When the image contains any text, labels, or words, they must be in English.`;
+      ? `CRITICAL: The generated image MUST display ALL text in CHINESE CHARACTERS (中文字符). This is non-negotiable. Any text, labels, titles, captions, or words in the image MUST be rendered in clear, legible Chinese characters (汉字). Do NOT use English text anywhere in the image. Ensure Chinese text is sharp, high-contrast, and professionally typeset.`
+      : `CRITICAL: The generated image MUST display ALL text in ENGLISH. Any text, labels, titles, captions, or words in the image MUST be rendered in clear, legible English. Ensure text is sharp, high-contrast, and professionally typeset.`;
 
-    const systemPrompt = `You are an expert image prompt engineer. Your task is to transform the given text into a high-quality, detailed image generation prompt.
+    // 获取风格信息
+    const stylePreset = getStylePresetById(style);
+    
+    const systemPrompt = `You are an expert image prompt engineer specializing in creating high-quality image generation prompts with clear, legible text rendering${stylePreset && stylePreset.id !== 'default' ? ` and specific artistic style integration.` : '.'}
 
 Guidelines:
 - Transform the user's selected text into a vivid, detailed visual description
-- Consider the context when relevant
+- Consider the context when relevant${stylePreset && stylePreset.id !== 'default' ? `
+- CRITICAL: You MUST deeply incorporate the "${stylePreset.nameEn}" (${stylePreset.name}) style into the prompt.
+  Style characteristics: ${stylePreset.description}
+  Key visual elements: ${stylePreset.promptSuffix}
+  The style should influence lighting, color palette, composition, and overall aesthetic.` : ''}
 - Use professional photography and art terminology
 - Include details about lighting, composition, mood, and style
-- ALWAYS include quality requirements: "4K resolution, ultra high quality, sharp details, professional photography"
+- ALWAYS include quality requirements: "8K resolution, ultra high quality, sharp details, professional photography, high-resolution output"
+- For text rendering: Specify "clear, sharp, high-contrast text, professional typography, legible fonts, crisp text edges"
 - Make the prompt suitable for AI image generation
 - Output ONLY the enhanced prompt, nothing else
-- Keep the prompt concise but descriptive (50-150 words)
+- Keep the prompt concise but descriptive (80-200 words)
 ${languageInstruction}`;
 
     const userPrompt = `Context: ${context || 'No additional context provided'}
 
-Selected text: "${text}"
+Selected text: "${text}"${stylePreset && stylePreset.id !== 'default' ? `
 
-Please create an enhanced image generation prompt based on the selected text and context. Remember: the image MUST contain ${imageLanguage === 'chinese' ? 'CHINESE (中文)' : 'ENGLISH'} text if there are any words in the image.`;
+Artistic style to integrate: ${stylePreset.nameEn} (${stylePreset.name})
+Style description: ${stylePreset.description}
+Key visual elements: ${stylePreset.promptSuffix}` : ''}
+
+Please create an enhanced image generation prompt based on the selected text and context.${stylePreset && stylePreset.id !== 'default' ? ` IMPORTANT: The "${stylePreset.nameEn}" style MUST be deeply integrated into the prompt's core concept, not just an afterthought.` : ''} Remember: the image MUST contain ${imageLanguage === 'chinese' ? 'CHINESE (中文)' : 'ENGLISH'} text if there are any words in the image.`;
 
     try {
-      const response = await fetch(`${customCreds.baseUrl}/chat/completions`, {
+      const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${customCreds.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: customCreds.textModel,
+          model: modelName,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -75,11 +91,25 @@ Please create an enhanced image generation prompt based on the selected text and
       }
 
       const data = await response.json();
-      const enhancedPrompt = data.choices?.[0]?.message?.content || text;
+      const enhancedPrompt = data.choices?.[0]?.message?.content;
+      
+      if (!enhancedPrompt || enhancedPrompt.trim() === '') {
+        // 检查是否返回的提示词就是原始文本（可能说明AI没有正确优化）
+        const normalizedInput = text.trim().toLowerCase().replace(/\s+/g, ' ');
+        const normalizedOutput = enhancedPrompt?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
+        
+        if (normalizedOutput === normalizedInput || !enhancedPrompt) {
+          throw new Error('AI 未能优化提示词，返回了原始文本或无内容');
+        }
+      }
+
+      console.log('[CustomAdapter] Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');
+      console.log('[CustomAdapter] Original text:', text.substring(0, 100) + '...');
 
       // 应用风格
       const finalPrompt = applyStyleToPrompt(enhancedPrompt, style);
 
+      console.log('[CustomAdapter] Final prompt with style:', finalPrompt.substring(0, 200) + '...');
       return finalPrompt;
     } catch (error) {
       console.error('Custom Provider Prompt enhancement failed:', error);
@@ -89,7 +119,7 @@ Please create an enhanced image generation prompt based on the selected text and
 
   /**
    * 生成图片
-   * 根据 imageLanguage 提示模型使用对应语言
+   * 使用 imageModel 配置
    */
   async generateImage(
     prompt: string,
@@ -98,26 +128,31 @@ Please create an enhanced image generation prompt based on the selected text and
   ): Promise<Blob> {
     const customCreds = credentials as CustomOpenAICredentials;
 
-    if (!customCreds.apiKey || !customCreds.baseUrl || !customCreds.imageModel) {
-      throw new Error('Custom Provider 配置不完整');
+    // 使用生图模型配置
+    const { baseUrl, apiKey, modelName } = customCreds.imageModel;
+
+    if (!apiKey || !baseUrl || !modelName) {
+      throw new Error('生图模型配置不完整');
     }
 
     const languageHint = imageLanguage === 'chinese'
-      ? 'IMPORTANT: Any text in the image must be in Chinese (中文). Generate in 4K resolution with ultra sharp details. '
-      : 'IMPORTANT: Any text in the image must be in English. Generate in 4K resolution with ultra sharp details. ';
+      ? 'CRITICAL REQUIREMENT: ALL text, labels, titles, and captions in the image MUST be rendered in clear, sharp CHINESE CHARACTERS (汉字/中文). Use high-contrast, professional typography. Generate in the highest possible resolution with ultra sharp details. '
+      : 'CRITICAL REQUIREMENT: ALL text, labels, titles, and captions in the image MUST be rendered in clear, sharp ENGLISH. Use high-contrast, professional typography. Generate in the highest possible resolution with ultra sharp details. ';
 
     try {
-      const response = await fetch(`${customCreds.baseUrl}/images/generations`, {
+      // 使用 1792x1024 获得更大尺寸的图片 (DALL-E 3 支持的最大尺寸)
+      const response = await fetch(`${baseUrl}/images/generations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${customCreds.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: customCreds.imageModel,
+          model: modelName,
           prompt: languageHint + prompt,
           n: 1,
-          size: '1024x1024',
+          size: '1792x1024',
+          quality: 'hd',
           response_format: 'b64_json',
         }),
       });
