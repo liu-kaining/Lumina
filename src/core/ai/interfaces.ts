@@ -23,7 +23,9 @@ export interface AIProvider {
     context: string,
     style: string,
     credentials: ProviderCredentials,
-    imageLanguage?: ImageLanguage
+    imageLanguage?: ImageLanguage,
+    signal?: AbortSignal,
+    pageTitle?: string
   ): Promise<string>;
 
   /**
@@ -31,11 +33,13 @@ export interface AIProvider {
    * @param prompt 增强后的 Prompt
    * @param credentials Provider 凭证
    * @param imageLanguage 图片语言选项
+   * @param signal 可选，用于取消请求
    * @returns 图片 Blob
    */
   generateImage(
     prompt: string,
     credentials: ProviderCredentials,
-    imageLanguage?: ImageLanguage
+    imageLanguage?: ImageLanguage,
+    signal?: AbortSignal
   ): Promise<Blob>;
 }

@@ -15,7 +15,6 @@ export default function App() {
 
   const {
     selectedText,
-    selectedHtml,
     pageTitle,
     pageContext,
     setSelectedText,
@@ -48,18 +47,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    console.log('LucidMark SidePanel loaded');
-
     const handleMessage = (message: MessageAction) => {
-      console.log('SidePanel received message:', message);
-
       if (message.type === 'TEXT_SELECTED') {
-        console.log('TEXT_SELECTED payload:', {
-          text: message.payload.text,
-          html: message.payload.html,
-          hasHtml: !!message.payload.html,
-          htmlLength: message.payload.html?.length || 0,
-        });
         setSelectedText(
           message.payload.text,
           message.payload.html,
@@ -125,10 +114,9 @@ export default function App() {
 
         <div className={`ws-card-text-box ${!selectedText ? 'is-placeholder' : ''}`}>
           <h3 className="ws-card-text-label">选中文本</h3>
-          <div
-            className="ws-card-text-value ws-rich-content"
-            dangerouslySetInnerHTML={{ __html: selectedHtml || selectedText || '请在网页中划选文本...' }}
-          />
+          <p className="ws-card-text-value">
+            {selectedText || '请在网页中划选文本...'}
+          </p>
         </div>
 
         {pageContext && (

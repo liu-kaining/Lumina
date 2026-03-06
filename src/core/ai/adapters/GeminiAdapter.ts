@@ -5,8 +5,8 @@ import { applyStyleToPrompt, getStylePresetById } from '../../presets';
 
 /**
  * Google Gemini Provider 适配器
- * 使用 Gemini 3.1 Pro 进行 Prompt 增强
- * 使用 Nano Banana Pro (gemini-3-pro-image-preview) 进行图片生成
+ * Prompt 增强：gemini-3.1-pro-preview
+ * 图片生成：gemini-3-pro-image-preview (Nano Banana Pro) / gemini-3.1-flash-image-preview (Nano Banana 2)
  */
 export class GeminiAdapter implements AIProvider {
   id = 'gemini';
@@ -22,7 +22,9 @@ export class GeminiAdapter implements AIProvider {
     context: string,
     style: string,
     credentials: ProviderCredentials,
-    imageLanguage: ImageLanguage = 'chinese'
+    imageLanguage: ImageLanguage = 'chinese',
+    _signal?: AbortSignal,
+    pageTitle?: string
   ): Promise<string> {
     const geminiCreds = credentials as GeminiCredentials;
 
@@ -30,59 +32,45 @@ export class GeminiAdapter implements AIProvider {
       throw new Error('Gemini API Key 未配置');
     }
 
-    console.log('[Gemini] Starting prompt enhancement...');
-    console.log('[Gemini] Model: gemini-3.1-pro-preview');
-    console.log('[Gemini] Image language:', imageLanguage);
-    
     const genAI = new GoogleGenerativeAI(geminiCreds.apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-3.1-pro-preview' });
 
-    // 根据语言选择不同的提示词
     const languageInstruction = imageLanguage === 'chinese'
-      ? `IMPORTANT: The generated image MUST display text in CHINESE (中文). When the image contains any text, labels, or words, they must be in Chinese characters. This is critical.`
-      : `IMPORTANT: The generated image MUST display text in ENGLISH. When the image contains any text, labels, or words, they must be in English. This is critical.`;
+      ? `CRITICAL: Any text shown IN the image (titles, labels, captions) MUST be in CHINESE (中文).`
+      : `CRITICAL: Any text shown IN the image MUST be in ENGLISH.`;
 
-    // 获取风格信息
     const stylePreset = getStylePresetById(style);
     
-    const systemPrompt = `You are an expert image prompt engineer. Your task is to transform the given text into a high-quality, detailed image generation prompt${stylePreset && stylePreset.id !== 'default' ? ` with a specific artistic style.` : '.'}
+    const systemPrompt = `You are an expert at writing prompts for AI image generation. Your output will be used directly to generate an image. Do NOT just paraphrase or repeat the user's text.
 
-Guidelines:
-- Transform the user's selected text into a vivid, detailed visual description
-- Consider the context and webpage title when relevant${stylePreset && stylePreset.id !== 'default' ? `
-- CRITICAL: You MUST incorporate the "${stylePreset.nameEn}" (${stylePreset.name}) style into the prompt. 
-  Style characteristics: ${stylePreset.description}
-  Key visual elements to include: ${stylePreset.promptSuffix}
-  The style MUST be integral to the prompt, not just an afterthought.` : ''}
-- Use professional photography and art terminology
-- Include details about lighting, composition, mood, and style
-- ALWAYS include quality requirements: "4K resolution, ultra high quality, sharp details, professional photography"
-- Make the prompt suitable for AI image generation
-- Output ONLY the enhanced prompt, nothing else
-- Keep the prompt concise but descriptive (50-150 words)
-${languageInstruction}`;
+Your output MUST be a single, detailed IMAGE PROMPT that describes the SCENE to be drawn. Include:
+- Subject: what is shown (characters, objects, setting)
+- Composition: framing, angle, layout
+- Lighting: type of light, mood, shadows
+- Style: visual style (e.g. cinematic, illustration, 3D render)
+- Quality: 4K, sharp details, professional
+${stylePreset && stylePreset.id !== 'default' ? `- You MUST weave in this artistic style: ${stylePreset.nameEn}. ${stylePreset.description}. Key elements: ${stylePreset.promptSuffix}` : ''}
 
-    const userPrompt = `Context: ${context || 'No additional context provided'}
+Rules:
+- Output ONLY the image prompt. No explanations, no "Here is...", no markdown.
+- Length: 60–180 words. Be specific and visual.
+- Write in English. ${languageInstruction}`;
 
-Selected text: "${text}"${stylePreset && stylePreset.id !== 'default' ? `
+    const userPrompt = `Page title: ${pageTitle || '(not provided)'}
+Context (snippet): ${context || '—'}
 
-Artistic style to integrate: ${stylePreset.nameEn} (${stylePreset.name})
-Style description: ${stylePreset.description}
-Key visual elements to include: ${stylePreset.promptSuffix}` : ''}
+User's selected text (turn this into a full image prompt, do not just copy):
+"${text}"${stylePreset && stylePreset.id !== 'default' ? `
 
-Please create an enhanced image generation prompt based on the selected text and context.${stylePreset && stylePreset.id !== 'default' ? ` IMPORTANT: The "${stylePreset.nameEn}" style MUST be deeply integrated into the prompt, not just appended at the end.` : ''} Remember: the image MUST contain ${imageLanguage === 'chinese' ? 'CHINESE (中文)' : 'ENGLISH'} text if there are any words in the image.`;
+Required style: ${stylePreset.nameEn} — integrate it into the scene (lighting, colors, mood).` : ''}
+
+Generate one image prompt that fully describes the scene to draw.`;
 
     try {
-      console.log('[Gemini] Sending request to API...');
-      const startTime = Date.now();
-      
       const result = await model.generateContent([
         { text: systemPrompt },
         { text: userPrompt },
       ]);
-
-      const elapsed = Date.now() - startTime;
-      console.log(`[Gemini] API response received in ${elapsed}ms`);
 
       const enhancedPrompt = result.response.text();
       
@@ -98,16 +86,9 @@ Please create an enhanced image generation prompt based on the selected text and
         throw new Error('AI 未能优化提示词，返回了原始文本');
       }
 
-      console.log('[Gemini] Original text:', text.substring(0, 100) + '...');
-      console.log('[Gemini] Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');
-
-      // 应用风格
       const finalPrompt = applyStyleToPrompt(enhancedPrompt, style);
-
-      console.log('[Gemini] Final prompt with style:', finalPrompt.substring(0, 200) + '...');
       return finalPrompt;
     } catch (error) {
-      console.error('[Gemini] Prompt enhancement failed:', error);
       
       // 更详细的错误信息
       if (error instanceof Error) {
@@ -137,7 +118,8 @@ Please create an enhanced image generation prompt based on the selected text and
   async generateImage(
     prompt: string,
     credentials: ProviderCredentials,
-    imageLanguage: ImageLanguage = 'chinese'
+    imageLanguage: ImageLanguage = 'chinese',
+    _signal?: AbortSignal
   ): Promise<Blob> {
     const geminiCreds = credentials as GeminiCredentials;
 
@@ -145,39 +127,29 @@ Please create an enhanced image generation prompt based on the selected text and
       throw new Error('Gemini API Key 未配置');
     }
 
-    console.log('[Gemini] Starting image generation...');
-    console.log('[Gemini] Model: gemini-3-pro-image-preview');
-    console.log('[Gemini] Image language:', imageLanguage);
-
     const genAI = new GoogleGenerativeAI(geminiCreds.apiKey);
 
     const model = genAI.getGenerativeModel({
       model: 'gemini-3-pro-image-preview',
     } as any);
 
-    // 添加语言提示
     const languageHint = imageLanguage === 'chinese'
-      ? 'IMPORTANT: Any text in the image must be in Chinese (中文).'
-      : 'IMPORTANT: Any text in the image must be in English.';
+      ? 'All text in the image must be in Chinese (中文). '
+      : 'All text in the image must be in English. ';
 
+    const userInstruction = `${prompt}\n\n${languageHint}4K, ultra sharp details, professional quality.`;
     try {
-      console.log('[Gemini] Sending image generation request...');
-      const startTime = Date.now();
-      
       const result = await model.generateContent({
         contents: [
           {
             role: 'user',
-            parts: [{ text: `${languageHint}\n\nGenerate a high-quality image in 4K resolution with ultra sharp details and professional quality based on this description: ${prompt}` }],
+            parts: [{ text: userInstruction }],
           },
         ],
         generationConfig: {
           responseModalities: ['image', 'text'],
         },
       } as any);
-
-      const elapsed = Date.now() - startTime;
-      console.log(`[Gemini] Image generated in ${elapsed}ms`);
 
       // 提取图片数据
       const response = result.response;
@@ -199,8 +171,6 @@ Please create an enhanced image generation prompt based on the selected text and
 
             const byteArray = new Uint8Array(byteNumbers);
             const blob = new Blob([byteArray], { type: mimeType });
-
-            console.log(`[Gemini] Image blob created, size: ${blob.size} bytes`);
             return blob;
           }
         }
@@ -208,8 +178,6 @@ Please create an enhanced image generation prompt based on the selected text and
 
       throw new Error('响应中未找到图片数据');
     } catch (error) {
-      console.error('[Gemini] Image generation failed:', error);
-      
       if (error instanceof Error) {
         if (error.message.includes('429') || error.message.includes('quota')) {
           throw new Error('Gemini API 配额已用尽，请稍后再试或升级到付费计划');

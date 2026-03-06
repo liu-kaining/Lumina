@@ -21,7 +21,9 @@ export class CustomAdapter implements AIProvider {
     context: string,
     style: string,
     credentials: ProviderCredentials,
-    imageLanguage: ImageLanguage = 'chinese'
+    imageLanguage: ImageLanguage = 'chinese',
+    signal?: AbortSignal,
+    pageTitle?: string
   ): Promise<string> {
     const customCreds = credentials as CustomOpenAICredentials;
 
@@ -33,39 +35,35 @@ export class CustomAdapter implements AIProvider {
     }
 
     const languageInstruction = imageLanguage === 'chinese'
-      ? `CRITICAL: The generated image MUST display ALL text in CHINESE CHARACTERS (中文字符). This is non-negotiable. Any text, labels, titles, captions, or words in the image MUST be rendered in clear, legible Chinese characters (汉字). Do NOT use English text anywhere in the image. Ensure Chinese text is sharp, high-contrast, and professionally typeset.`
-      : `CRITICAL: The generated image MUST display ALL text in ENGLISH. Any text, labels, titles, captions, or words in the image MUST be rendered in clear, legible English. Ensure text is sharp, high-contrast, and professionally typeset.`;
+      ? `CRITICAL: Any text shown IN the image MUST be in CHINESE (中文), clear and legible.`
+      : `CRITICAL: Any text shown IN the image MUST be in ENGLISH, clear and legible.`;
 
-    // 获取风格信息
     const stylePreset = getStylePresetById(style);
     
-    const systemPrompt = `You are an expert image prompt engineer specializing in creating high-quality image generation prompts with clear, legible text rendering${stylePreset && stylePreset.id !== 'default' ? ` and specific artistic style integration.` : '.'}
+    const systemPrompt = `You are an expert at writing prompts for AI image generation (e.g. DALL·E, Midjourney). Your output will be used directly to generate an image. Do NOT just paraphrase or repeat the user's text.
 
-Guidelines:
-- Transform the user's selected text into a vivid, detailed visual description
-- Consider the context when relevant${stylePreset && stylePreset.id !== 'default' ? `
-- CRITICAL: You MUST deeply incorporate the "${stylePreset.nameEn}" (${stylePreset.name}) style into the prompt.
-  Style characteristics: ${stylePreset.description}
-  Key visual elements: ${stylePreset.promptSuffix}
-  The style should influence lighting, color palette, composition, and overall aesthetic.` : ''}
-- Use professional photography and art terminology
-- Include details about lighting, composition, mood, and style
-- ALWAYS include quality requirements: "8K resolution, ultra high quality, sharp details, professional photography, high-resolution output"
-- For text rendering: Specify "clear, sharp, high-contrast text, professional typography, legible fonts, crisp text edges"
-- Make the prompt suitable for AI image generation
-- Output ONLY the enhanced prompt, nothing else
-- Keep the prompt concise but descriptive (80-200 words)
-${languageInstruction}`;
+Your output MUST be a single, detailed IMAGE PROMPT that describes the SCENE to be drawn. Include:
+- Subject: what is shown (characters, objects, setting)
+- Composition: framing, camera angle, layout
+- Lighting: type of light, mood, shadows
+- Style: visual style (e.g. cinematic, illustration, 3D render)
+- Quality: 8K, ultra high quality, sharp details, professional
+${stylePreset && stylePreset.id !== 'default' ? `- You MUST weave in this artistic style: ${stylePreset.nameEn}. ${stylePreset.description}. Key elements: ${stylePreset.promptSuffix}` : ''}
 
-    const userPrompt = `Context: ${context || 'No additional context provided'}
+Rules:
+- Output ONLY the image prompt. No explanations, no "Here is...", no markdown.
+- Length: 80–200 words. Be specific and visual.
+- Write in English. ${languageInstruction}`;
 
-Selected text: "${text}"${stylePreset && stylePreset.id !== 'default' ? `
+    const userPrompt = `Page title: ${pageTitle || '(not provided)'}
+Context (snippet): ${context || '—'}
 
-Artistic style to integrate: ${stylePreset.nameEn} (${stylePreset.name})
-Style description: ${stylePreset.description}
-Key visual elements: ${stylePreset.promptSuffix}` : ''}
+User's selected text (turn this into a full image prompt, do not just copy):
+"${text}"${stylePreset && stylePreset.id !== 'default' ? `
 
-Please create an enhanced image generation prompt based on the selected text and context.${stylePreset && stylePreset.id !== 'default' ? ` IMPORTANT: The "${stylePreset.nameEn}" style MUST be deeply integrated into the prompt's core concept, not just an afterthought.` : ''} Remember: the image MUST contain ${imageLanguage === 'chinese' ? 'CHINESE (中文)' : 'ENGLISH'} text if there are any words in the image.`;
+Required style: ${stylePreset.nameEn} — integrate it into the scene (lighting, colors, mood).` : ''}
+
+Generate one image prompt that fully describes the scene to draw.`;
 
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -83,6 +81,7 @@ Please create an enhanced image generation prompt based on the selected text and
           temperature: 0.7,
           max_tokens: 300,
         }),
+        signal,
       });
 
       if (!response.ok) {
@@ -91,40 +90,22 @@ Please create an enhanced image generation prompt based on the selected text and
       }
 
       const data = await response.json();
-      console.log('[CustomAdapter] API response data:', JSON.stringify(data, null, 2));
-      
       const enhancedPrompt = data.choices?.[0]?.message?.content;
       
-      console.log('[CustomAdapter] Enhanced prompt raw:', enhancedPrompt);
-      
       if (!enhancedPrompt || enhancedPrompt.trim() === '') {
-        console.error('[CustomAdapter] AI 返回空提示词，完整响应:', JSON.stringify(data, null, 2));
-        console.error('[CustomAdapter] Request model:', modelName);
-        console.error('[CustomAdapter] Request baseUrl:', baseUrl);
         throw new Error('AI 未能优化提示词，返回了空内容');
       }
       
-      // 检查是否返回的提示词就是原始文本（可能说明AI没有正确优化）
       const normalizedInput = text.trim().toLowerCase().replace(/\s+/g, ' ');
       const normalizedOutput = enhancedPrompt.trim().toLowerCase().replace(/\s+/g, ' ');
       
       if (normalizedOutput === normalizedInput) {
-        console.error('[CustomAdapter] AI 返回未优化的原始文本');
-        console.error('[CustomAdapter] Input:', text);
-        console.error('[CustomAdapter] Output:', enhancedPrompt);
         throw new Error('AI 未能优化提示词，返回了原始文本');
       }
 
-      console.log('[CustomAdapter] Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');
-      console.log('[CustomAdapter] Original text:', text.substring(0, 100) + '...');
-
-      // 应用风格
       const finalPrompt = applyStyleToPrompt(enhancedPrompt, style);
-
-      console.log('[CustomAdapter] Final prompt with style:', finalPrompt.substring(0, 200) + '...');
       return finalPrompt;
     } catch (error) {
-      console.error('Custom Provider Prompt enhancement failed:', error);
       throw new Error(`Prompt 增强失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -136,7 +117,8 @@ Please create an enhanced image generation prompt based on the selected text and
   async generateImage(
     prompt: string,
     credentials: ProviderCredentials,
-    imageLanguage: ImageLanguage = 'chinese'
+    imageLanguage: ImageLanguage = 'chinese',
+    signal?: AbortSignal
   ): Promise<Blob> {
     const customCreds = credentials as CustomOpenAICredentials;
 
@@ -167,6 +149,7 @@ Please create an enhanced image generation prompt based on the selected text and
           quality: 'hd',
           response_format: 'b64_json',
         }),
+        signal,
       });
 
       if (!response.ok) {
@@ -194,7 +177,6 @@ Please create an enhanced image generation prompt based on the selected text and
 
       return blob;
     } catch (error) {
-      console.error('Custom Provider Image generation failed:', error);
       throw new Error(`图片生成失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }

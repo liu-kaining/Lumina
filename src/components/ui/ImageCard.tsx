@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Download, GripVertical, Maximize2, Check, Trash2 } from 'lucide-react';
 import { ImageRecord } from '../../types';
@@ -24,13 +24,18 @@ export function ImageCard({
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
-  const imageUrl = URL.createObjectURL(image.imageBlob);
+  useEffect(() => {
+    const url = URL.createObjectURL(image.imageBlob);
+    setObjectUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image.imageBlob]);
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (selectionMode) return;
+    if (selectionMode || !objectUrl) return;
     setIsDragging(true);
-    e.dataTransfer.setData('text/plain', imageUrl);
+    e.dataTransfer.setData('text/plain', objectUrl);
     e.dataTransfer.effectAllowed = 'copy';
     e.stopPropagation();
     e.preventDefault();
@@ -43,8 +48,9 @@ export function ImageCard({
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    if (!objectUrl) return;
     const a = document.createElement('a');
-    a.href = imageUrl;
+    a.href = objectUrl;
     a.download = `lucidmark_${image.createdAt}.png`;
     a.click();
   };
@@ -107,13 +113,15 @@ export function ImageCard({
           </motion.div>
         )}
 
-        <img
-          src={imageUrl}
-          alt={image.originalText}
-          className="gallery-card-img"
-          style={{ opacity: isSelected && selectionMode ? 0.8 : 1 }}
-          draggable={false}
-        />
+        {objectUrl && (
+          <img
+            src={objectUrl}
+            alt={image.originalText}
+            className="gallery-card-img"
+            style={{ opacity: isSelected && selectionMode ? 0.8 : 1 }}
+            draggable={false}
+          />
+        )}
 
         {!selectionMode && isHovered && (
           <motion.div

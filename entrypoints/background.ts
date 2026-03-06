@@ -1,14 +1,9 @@
 import { MessageAction } from '../src/types';
 
 export default defineBackground(() => {
-  console.log('LucidMark Background initialized', { id: browser.runtime.id });
-
   // 监听扩展安装事件
   browser.runtime.onInstalled.addListener(() => {
-    console.log('LucidMark installed successfully');
-
-    // 设置点击扩展图标时打开侧边栏
-    browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error(error));
+    browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
     // 创建右键菜单
     browser.contextMenus.create({
@@ -21,8 +16,6 @@ export default defineBackground(() => {
   // 监听右键菜单点击
   browser.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'lucidmark-generate' && info.selectionText && tab?.id) {
-      console.log('Context menu clicked:', info.selectionText);
-
       // 打开侧边栏
       await browser.sidePanel.open({ tabId: tab.id });
 
@@ -47,8 +40,6 @@ export default defineBackground(() => {
   // 监听快捷键命令
   browser.commands.onCommand.addListener(async (command, tab) => {
     if (command === 'generate-image' && tab?.id) {
-      console.log('Shortcut triggered:', command);
-
       // 打开侧边栏
       await browser.sidePanel.open({ tabId: tab.id });
 
@@ -69,21 +60,15 @@ export default defineBackground(() => {
             browser.runtime.sendMessage(message);
           }, 300);
         }
-      } catch (error) {
-        console.error('Failed to get selection:', error);
+      } catch {
+        // tab may not have content script or selection
       }
     }
   });
 
   // 监听来自 content script 的消息
-  browser.runtime.onMessage.addListener((message: MessageAction, sender) => {
+  browser.runtime.onMessage.addListener((message: MessageAction) => {
     if (message.type === 'TEXT_SELECTED') {
-      console.log('Text selected from content script:', {
-        text: message.payload.text?.substring(0, 50),
-        hasHtml: !!message.payload.html,
-        htmlLength: message.payload.html?.length || 0,
-      });
-
       // 转发给 sidePanel
       browser.runtime.sendMessage(message);
     }

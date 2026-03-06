@@ -74,6 +74,7 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
         pageTitle,
         style: currentStyle,
         imageLanguage,
+        signal: abortControllerRef.current?.signal,
         onProgress: (step: 'enhancing' | 'generating', message: string) => {
           setCurrentStep(step);
           setStatus(message);
@@ -213,7 +214,7 @@ export function GenerationPanel({ onGenerated }: GenerationPanelProps) {
       <ConfirmDialog
         isOpen={showConfirm}
         title="开始生成配图？"
-        message={`将使用「${currentStyle}」风格，图片文字为${imageLanguage === 'chinese' ? '中文' : '英文'}，预计需要 10-30 秒。`}
+        message={`将使用「${currentStyle}」风格，图片文字为${imageLanguage === 'chinese' ? '中文' : '英文'}，预计需要 1-5 分钟。`}
         confirmText="开始生成"
         cancelText="取消"
         onConfirm={handleGenerate}

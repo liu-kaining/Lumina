@@ -5,25 +5,17 @@ import './App.css';
 function App() {
   const openSidePanel = async () => {
     try {
-      // 获取当前窗口
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (!tab || !tab.windowId) {
-        console.error('No active tab found');
         return;
       }
-      
-      // Chrome 116+ 支持 sidePanel.open()
-      // @ts-ignore
-      if (chrome.sidePanel && chrome.sidePanel.open) {
-        // @ts-ignore
-        await chrome.sidePanel.open({ windowId: tab.windowId });
+      if (browser.sidePanel?.open) {
+        await browser.sidePanel.open({ windowId: tab.windowId });
       } else {
         // 备选方案：显示提示
         alert('请点击浏览器右上角的 LucidMark 图标，然后在侧边栏菜单中选择 LucidMark。\n\n或者在任意网页划选文本后右键发送到 LucidMark。');
       }
-    } catch (e) {
-      console.error('Failed to open sidebar:', e);
-      // 备选方案：显示提示
+    } catch {
       alert('请点击浏览器右上角的 LucidMark 图标，然后在侧边栏菜单中选择 LucidMark。\n\n或者在任意网页划选文本后右键发送到 LucidMark。');
     }
   };

@@ -1,8 +1,6 @@
 export default defineContentScript({
   matches: ['<all_urls>'],
   main() {
-    console.log('LucidMark Content Script loaded');
-
     /**
      * 获取选中文本及其上下文（包含 HTML 格式）
      */
@@ -50,21 +48,10 @@ export default defineContentScript({
           // 如果找到了表格元素，使用整个表格
           if (tableElement) {
             selectedHtml = tableElement.outerHTML;
-            console.log('Using entire table HTML instead of selection');
           } else if (listElement) {
-            // 如果是列表，使用整个列表
             selectedHtml = listElement.outerHTML;
-            console.log('Using entire list HTML instead of selection');
           }
         }
-
-        console.log('Captured HTML:', {
-          length: selectedHtml.length,
-          preview: selectedHtml.substring(0, 200),
-          hasTable: selectedHtml.includes('<table'),
-          hasUl: selectedHtml.includes('<ul'),
-          hasLi: selectedHtml.includes('<li'),
-        });
 
         // 获取上下文
         const container = range.commonAncestorContainer;
@@ -79,8 +66,8 @@ export default defineContentScript({
 
           contextSnippet = fullText.substring(startOffset, endOffset);
         }
-      } catch (error) {
-        console.warn('Failed to get context:', error);
+      } catch {
+        // ignore context extraction errors
       }
 
       return {
@@ -96,8 +83,6 @@ export default defineContentScript({
       const result = getSelectionWithContext();
 
       if (result && result.text.length > 2) {
-        console.log('Text selected:', result.text.substring(0, 50) + '...');
-
         // 发送到 background
         browser.runtime.sendMessage({
           type: 'TEXT_SELECTED',

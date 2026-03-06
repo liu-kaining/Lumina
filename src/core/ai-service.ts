@@ -24,6 +24,17 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 }
 
 /**
+ * 将 AbortSignal 转为 Promise：signal 触发时 reject AbortError
+ */
+function whenAborted(signal: AbortSignal | undefined): Promise<never> {
+  if (!signal) return new Promise(() => {});
+  if (signal.aborted) return Promise.reject(new DOMException('Abort', 'AbortError'));
+  return new Promise((_, reject) => {
+    signal.addEventListener('abort', () => reject(new DOMException('Abort', 'AbortError')), { once: true });
+  });
+}
+
+/**
  * AI 服务封装
  * 提供简洁的 API 供 UI 层调用
  */
@@ -47,6 +58,7 @@ export class AIService {
     style: string;
     imageLanguage?: ImageLanguage;
     onProgress?: (step: 'enhancing' | 'generating', message: string) => void;
+    signal?: AbortSignal;
   }): Promise<number> {
     const {
       providerId,
@@ -57,6 +69,7 @@ export class AIService {
       style,
       imageLanguage = 'chinese',
       onProgress,
+      signal,
     } = params;
 
     // 获取 Provider 实例
@@ -66,23 +79,28 @@ export class AIService {
     onProgress?.('enhancing', '正在连接 Gemini API...');
     
     try {
-      const refinedPrompt = await withTimeout(
-        provider.enhancePrompt(selectedText, context, style, credentials, imageLanguage),
-        this.ENHANCE_TIMEOUT,
-        'Prompt 增强超时，请检查网络连接'
-      );
+      const refinedPrompt = await Promise.race([
+        withTimeout(
+          provider.enhancePrompt(selectedText, context, style, credentials, imageLanguage, signal, pageTitle),
+          this.ENHANCE_TIMEOUT,
+          'Prompt 增强超时，请检查网络连接'
+        ),
+        whenAborted(signal),
+      ]);
 
-      console.log('Enhanced Prompt:', refinedPrompt);
       onProgress?.('enhancing', '分析完成，准备生成图片...');
 
       // Step 2: 生成图片
       onProgress?.('generating', '正在调用图片生成模型...');
       
-      const imageBlob = await withTimeout(
-        provider.generateImage(refinedPrompt, credentials, imageLanguage),
-        this.GENERATE_TIMEOUT,
-        '图片生成超时，请稍后重试'
-      );
+      const imageBlob = await Promise.race([
+        withTimeout(
+          provider.generateImage(refinedPrompt, credentials, imageLanguage, signal),
+          this.GENERATE_TIMEOUT,
+          '图片生成超时，请稍后重试'
+        ),
+        whenAborted(signal),
+      ]);
 
       onProgress?.('generating', '图片生成完成，正在保存...');
 
@@ -100,7 +118,6 @@ export class AIService {
 
       return imageId;
     } catch (error) {
-      console.error('Generation failed:', error);
       throw error;
     }
   }
