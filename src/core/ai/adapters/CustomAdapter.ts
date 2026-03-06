@@ -94,13 +94,19 @@ Please create an enhanced image generation prompt based on the selected text and
       const enhancedPrompt = data.choices?.[0]?.message?.content;
       
       if (!enhancedPrompt || enhancedPrompt.trim() === '') {
-        // 检查是否返回的提示词就是原始文本（可能说明AI没有正确优化）
-        const normalizedInput = text.trim().toLowerCase().replace(/\s+/g, ' ');
-        const normalizedOutput = enhancedPrompt?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
-        
-        if (normalizedOutput === normalizedInput || !enhancedPrompt) {
-          throw new Error('AI 未能优化提示词，返回了原始文本或无内容');
-        }
+        console.error('[CustomAdapter] AI 返回空提示词:', enhancedPrompt);
+        throw new Error('AI 未能优化提示词，返回了空内容');
+      }
+      
+      // 检查是否返回的提示词就是原始文本（可能说明AI没有正确优化）
+      const normalizedInput = text.trim().toLowerCase().replace(/\s+/g, ' ');
+      const normalizedOutput = enhancedPrompt.trim().toLowerCase().replace(/\s+/g, ' ');
+      
+      if (normalizedOutput === normalizedInput) {
+        console.error('[CustomAdapter] AI 返回未优化的原始文本');
+        console.error('[CustomAdapter] Input:', text);
+        console.error('[CustomAdapter] Output:', enhancedPrompt);
+        throw new Error('AI 未能优化提示词，返回了原始文本');
       }
 
       console.log('[CustomAdapter] Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');

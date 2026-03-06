@@ -244,7 +244,7 @@ export function Gallery() {
             </motion.button>
             <motion.button
               type="button"
-              onClick={handleDeleteSelected}
+              onClick={openDeleteConfirm}
               disabled={selectedCount === 0}
               className="gallery-btn gallery-btn-red"
               whileHover={{ scale: 1.02 }}
@@ -280,7 +280,7 @@ export function Gallery() {
               selectionMode={selectionMode}
               onToggleSelect={() => toggleSelect(image.id!)}
               onClick={() => handleImageClick(image as ImageRecord)}
-              onDelete={() => handleDeleteSingle(image.id!)}
+              onDelete={() => openDeleteSingleConfirm(image.id!)}
             />
           ))}
         </AnimatePresence>
